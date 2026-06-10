@@ -46,8 +46,7 @@ Learners deploy this pipeline three ways and *feel* the trade-offs:
 | 2 | `worker-agents` | + Background Worker + Valkey (stream + pub/sub) | Durability is real, but **you** hand-roll the coordination |
 | 3 | `workflow-agents` | + Workflows (retries, timeouts, per-task compute, traces) | The same guarantees become a config object |
 
-Each pattern isolates exactly one new idea instead of drowning it in application
-logic. The agent code stays constant so the infrastructure stays at the center of
+Each pattern isolates exactly one new idea. The agent code stays constant so the infrastructure stays at the center of
 every segment.
 
 The pipeline (`prepareDiff → filterDiff → [security ‖ performance ‖ ux?] → judge`)
@@ -81,7 +80,7 @@ a mental model of "a process handling requests" is enough.
 
 ## 2. Logistics
 
-- **Total time:** ~1.5 hours, designed as **two sessions** with a break.
+- **Total time:** ~1h 50 mins, designed as **two sessions** with a 10 minute break.
   - **Session 1 — Substrates & coordination** (~50 min): Patterns 1 & 2,
     including the hand-rolled ack exercise.
   - **Session 2 — Let the platform (and agents) do it** (~50 min): Pattern 3
@@ -91,40 +90,6 @@ a mental model of "a process handling requests" is enough.
 - **Group size:** works 1:1 up to ~30 with a helper for debugging environments.
 - **Delivery:** in-person or remote. Remote works fine. Have learners share service
   URLs, CLI output, and Dashboard screenshots when they get stuck.
-
-### Compressed variants
-
-**60-minute (conference slot).** Cut Module 2 to a 5-minute narrated scroll of
-`kv.ts` (no deploy), skip Lab 1 entirely, and tell learners it's in the docs for
-later. Open Session 2 by *showing* the Lab 1 solution and naming the aha
-("at-least-once delivery — you'd have written all of that"). This preserves the
-emotional arc while giving Lab 2 the full 25 minutes it needs. Drop the close to
-5 minutes.
-
-| Module | Full (90 min) | 60-min | What changes |
-| --- | --- | --- | --- |
-| Setup & framing | 10 min | 8 min | Shorter spine — draw, don't narrate |
-| Pattern 1 | 15 min | 10 min | Deploy live, break it on stage, move on |
-| Pattern 2 | 20 min | 5 min | Narrate `kv.ts` only — no deploy |
-| Lab 1 | 20 min | 0 min | Cut — show the solution instead |
-| Break | 5–10 min | 0 min | No break |
-| Pattern 3 | 20 min | 12 min | Deploy + trace, skip Dashboard walkthrough |
-| Lab 2 | 30 min | 20 min | Steps 1–3 only; skip ship-live |
-| Close | 10 min | 5 min | Spine re-draw + one exit question |
-
-**45-minute (lightning).** Demo only — no hands-on labs. Walk Pattern 1 → break
-it → show `kv.ts` as the price → deploy Pattern 3 → run `code-review` → show
-the trace → close on the spine. Learners follow the participant walkthrough and labs
-on their own afterward using `workshop/participants/`. Good for a lunch talk or
-conference keynote lead-in.
-
-**3-hour (deep dive).** Run the full 90-minute version, then extend Session 2
-with all three bonus points from
-[04 — Bonus points](../participants/04-author-a-task.md#bonus-points): the judge
-reflection loop, the MCP tool, and the HITL gate. Give each bonus 20–25 minutes.
-Add a second break between Lab 2 and the bonus round. Close with a group
-discussion on which bonus pattern is most relevant to their team's stack.
-
 ---
 
 ## 3. The spine (the one mental model to land)
@@ -156,34 +121,6 @@ The emotional arc you're selling:
 
 If learners leave able to recite "the agent never changed, the substrate did the
 work," the workshop succeeded.
-
-### Why the arc works (read this once, then internalize)
-
-These are the design principles behind the session order. You don't need to say
-any of this on stage — they're here so you understand *why* the structure works,
-which helps you adapt when things go sideways.
-
-- **Foundation first, new primitive last.** The arc builds in the order the
-  platform story should be told: a web service and managed Postgres, then a
-  background worker and Valkey, then Workflows. By the time attendees reach
-  Workflows, they're standing on infrastructure they already trust — so the new
-  primitive reads as the natural next step, not a leap.
-- **The payoff is earned, not asserted.** In Session 1 attendees hand-roll the
-  queue, acks, retries, and coordination a worker needs. In Session 2 they watch
-  Workflows make all of it disappear. The value of the platform is felt through
-  the contrast, not through a pitch.
-- **Minutes from fork to running agent.** Managed data services provisioned from
-  a Blueprint and a mock-model fallback that needs no API keys mean the first
-  real win (a live deploy reviewing a PR) lands early. Checkpoints at each stage
-  mean no one gets stranded.
-- **They leave having built and shipped, not just watched.** Every attendee
-  deploys a real multi-service app and authors a real task. They walk out with a
-  deployable Workflow and a fork they can keep extending — not a slide deck to
-  forget.
-- **Reliable on stage and on conference wifi.** The pipeline is deterministic
-  and self-contained: a public PR as input, a mock model that needs no external
-  API calls, and no dependence on per-attendee secrets. What's shown on stage is
-  what attendees can reproduce in the room, every time.
 
 ---
 
