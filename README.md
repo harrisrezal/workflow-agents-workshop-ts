@@ -161,7 +161,7 @@ packages/
                               → src/workflows/your-review/index.ts   sandbox for the hands-on finale
 
 shared/
-  agent/                    @workshop/agent — LLM loop, agents, runReview (substrate-agnostic)
+  agent/                    @workshop/agent — LLM loop, agents, runReview
                               → src/review.ts           runReview() orchestration
                               → src/agents.ts           security, performance, ux, judge definitions
                               → src/loop.ts             provider-agnostic LLM + tool loop
@@ -175,9 +175,6 @@ shared/
                               → src/page.ts             dashboard HTML template
 
 docs/                       guided walkthrough (00–05)
-                              → 00-setup.md             fork, Render, local dev
-                              → 01-naive-agent.md       Pattern 1 walkthrough
-                              → 04-author-a-task.md     ship your own workflow task
 
 facilitator/                facilitator notes and exercise solutions
 
