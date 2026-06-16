@@ -8,7 +8,7 @@ Three tables (see [`schema.sql`](schema.sql)): `reviews`, `findings`, `spans`.
 ## Backend selection (automatic)
 
 - `DATABASE_URL` **set** → Postgres (durable; required for multi-process
-  worker-agents, where web and worker share state).
+  queue-agents, where web and worker share state).
 - `DATABASE_URL` **unset** → in-memory (keyless, zero-setup local dev).
 
 The public functions have the same shape regardless of backend; the pg path keeps

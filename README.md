@@ -9,18 +9,14 @@ a `judge`) across progressively more durable execution models. Along the way, yo
 open live Render URLs, inspect logs and traces in the Dashboard, and use local
 development for focused test loops.
 
-The core idea stays the same from start to finish: the agent does not change. The
-substrate does.
-
-For someone facilitating this workshop, start with [`facilitator/GUIDE.md`](facilitator/GUIDE.md)
-and the guided walkthrough in [`docs/`](docs).
+For someone facilitating this workshop, start with [`workshop/facilitator-guide.md`](workshop/facilitator-guide.md).
 
 ## The three patterns
 
 | Pattern | Package | Substrate | Render primitives | You own |
 | --- | --- | --- | --- | --- |
 | **1. Naive** | [`packages/naive-agent`](packages/naive-agent) | Agent runs in-process, inside the web request | Web Service + Postgres | Nothing, but no scale or durability |
-| **2. Worker** | [`packages/worker-agents`](packages/worker-agents) | Thin producer + background worker over a Valkey queue | Web Service + Background Worker + Key Value + Postgres | The queue, consumer group, acks, retries, and pub/sub |
+| **2. Queue** | [`packages/queue-agents`](packages/queue-agents) | Thin producer + background worker over a Valkey queue | Web Service + Background Worker + Key Value + Postgres | The queue, consumer group, acks, retries, and pub/sub |
 | **3. Workflows** | [`packages/workflow-agents`](packages/workflow-agents) | Each agent is a Render `task()` in its own container | Web Service + Workflows + Postgres | Nothing. Render does the coordination |
 
 The agent code lives in the shared [`@workshop/agent`](shared/agent) package. The substrate decides how it is invoked.
@@ -47,25 +43,10 @@ with `AGENT_MODEL=mock`.
 
 ## Workshop path
 
-Follow the guided walkthrough in [`docs/`](docs) in order:
-
-- [`docs/00-setup.md`](docs/00-setup.md) — Fork the repo, connect Render, install
-  the CLI, and prepare local test tools
-- [`docs/01-naive-agent.md`](docs/01-naive-agent.md) — Deploy Pattern 1 with a
-  Blueprint, open the live web service, and see where request-bound agents break
-- [`docs/02-worker-agents.md`](docs/02-worker-agents.md) — Deploy Pattern 2 with a
-  Blueprint, scale the worker, and hand-write the ack/retry semantics
-- [`docs/03-workflow-agents.md`](docs/03-workflow-agents.md) — Use the CLI for
-  Pattern 3, create the Workflow service, trigger tasks, and inspect traces
-- [`docs/04-author-a-task.md`](docs/04-author-a-task.md) — Ship your own Workflow
-  task, compose agents, force retries, and watch the live run
-- [`docs/05-future-iterations.md`](docs/05-future-iterations.md) — Move toward
-  production with evals, guardrails, circuit breakers, and observability
-
 Patterns 1 and 2 use Blueprints:
 
 - [`packages/naive-agent/render.yaml`](packages/naive-agent/render.yaml) — Web Service + Postgres
-- [`packages/worker-agents/render.yaml`](packages/worker-agents/render.yaml) — Web Service + Background Worker + Key Value + Postgres
+- [`packages/queue-agents/render.yaml`](packages/queue-agents/render.yaml) — Web Service + Background Worker + Key Value + Postgres
 
 Each Blueprint creates its own Render project with a `production` environment, so
 the services and datastores for each pattern stay grouped in the Dashboard.
@@ -79,10 +60,10 @@ Pattern 3 uses both:
 
 ## Interactive beats
 
-- **Session 1 — hand-roll coordination.** In worker-agents, learners implement
-  `processEntry` in [`packages/worker-agents/src/kv.ts`](packages/worker-agents/src/kv.ts):
-  ack on success, leave un-acked for retry on failure, verify locally with
-  `npm run test:worker`, and redeploy the worker.
+- **Session 1 — inspect the coordination.** In queue-agents, learners trace the ack
+  contract in [`packages/queue-agents/src/kv.ts`](packages/queue-agents/src/kv.ts),
+  run the focused test with `npm run test:worker`, scale the worker, and observe
+  what they now own.
 - **Session 2 — let agents author tasks.** In workflow-agents, learners explore the
   `your-review` sandbox and work with the small `task()` API surface. The same
   durability that took a whole queue in Session 1 is now a config object, a live
@@ -101,26 +82,11 @@ cp .env.example .env
 Local services need only what each pattern uses:
 
 ```sh
-createdb agents_workshop        # Postgres: naive-agent and worker-agents
-redis-server &                  # Redis/Valkey: worker-agents only
+createdb agents_workshop        # Postgres: naive-agent and queue-agents
+valkey-server &                 # Valkey: queue-agents only
 ```
 
-Or run everything with Docker:
-
-```sh
-npm run docker:up               # builds and starts all services
-# Pattern 1: http://localhost:3001
-# Pattern 2: http://localhost:3002
-# Pattern 3: http://localhost:3003  (Render workflow dev server on :8120)
-npm run docker:down             # stop and remove containers
-```
-
-Pattern 3 in Docker runs `scripts/docker-workflow-dev.sh`. The Render CLI dev server
-registers tasks on `:8120`, then the gateway on `:3003` dispatches through it.
-Trigger from the UI, or run `render workflows tasks list --local` from your host
-against `:8120`.
-
-Run any pattern on the host without Docker:
+Run any pattern on the host:
 
 ```sh
 # Pattern 1: in-process
@@ -132,8 +98,8 @@ npm run worker:worker           # terminal B: one worker
 npm run worker:worker           # terminal C: another worker
 
 # Pattern 3: Render Workflows
-npm run dev --workspace @workshop/workflow-agents
-npm run dev:workflows --workspace @workshop/workflow-agents
+npm run dev --workspace @workshop/workflow-agents            # in-process local mode
+npm run dev:workflows --workspace @workshop/workflow-agents  # full local Workflows runtime
 ```
 
 Open `http://localhost:3000/` for the shared telemetry viewer, paste a public PR
@@ -147,22 +113,22 @@ all import.
 ```
 packages/
   naive-agent/              Pattern 1: in-process web service (Hono)
-                              → src/server.ts         POST /api/reviews; awaits runReview()
+                              → src/server.ts         POST /api/reviews; composes pipeline inline (blocking)
                               → render.yaml             single-service Blueprint
 
-  worker-agents/            Pattern 2: producer web + background worker (Valkey)
+  queue-agents/             Pattern 2: producer web + background worker (Valkey)
                               → src/web.ts              enqueue jobs, stream SSE progress
-                              → src/worker.ts           consume the queue, run runReview()
+                              → src/worker.ts           consume the queue, compose pipeline inline (background)
                               → src/kv.ts               Valkey stream + pub/sub wiring
 
   workflow-agents/          Pattern 3: Render Workflows gateway + workflow service
-                              → src/server.ts           dispatch workflows, GitHub webhooks
+                              → src/server.ts           dispatch workflows
                               → src/workflows/code-review/index.ts   the finished pipeline as tasks
                               → src/workflows/your-review/index.ts   sandbox for the hands-on finale
 
 shared/
-  agent/                    @workshop/agent — LLM loop, agents, runReview
-                              → src/review.ts           runReview() orchestration
+  agent/                    @workshop/agent — LLM loop, agents, composable review building blocks
+                              → src/review.ts           review types + re-exports
                               → src/agents.ts           security, performance, ux, judge definitions
                               → src/loop.ts             provider-agnostic LLM + tool loop
 
@@ -186,10 +152,11 @@ tests/                      unit, integration, and e2e tests (mock model, no API
 
 ### Shared packages
 
-- **[`@workshop/agent`](shared/agent)** — The substrate-agnostic core. `runReview()`,
+- **[`@workshop/agent`](shared/agent)** — The substrate-agnostic core. Composable
+  building blocks (`prepareDiff`, `filterDiff`, `selectReviewers`, `toReviewSummary`),
   the `defineAgent` reviewers (`securityReviewer`, `performanceReviewer`,
-  `uxReviewer`, `judge`), `prepareDiff`/`filterDiff`, the provider-agnostic LLM loop,
-  and the mock client. Nothing here knows about Render.
+  `uxReviewer`, `judge`), the provider-agnostic LLM loop, and the mock client.
+  Each pattern imports these and composes its own pipeline inline.
 - **[`@workshop/db`](shared/db)** — The durable telemetry record the viewer reads.
   Auto-selects Postgres when `DATABASE_URL` is set, and uses in-memory storage
   otherwise.
@@ -226,15 +193,14 @@ All patterns read the same env:
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | all | Optional. Deterministic mock model if absent |
 | `AGENT_MODEL=mock` | all | Force the mock model even with a key |
-| `DATABASE_URL` | naive-agent, worker-agents, workflow-agents | Postgres. In-memory fallback when unset |
-| `REDIS_URL` | worker-agents | Queue and pub/sub. Defaults to `redis://127.0.0.1:6379` |
+| `DATABASE_URL` | naive-agent, queue-agents, workflow-agents | Postgres. In-memory fallback when unset |
+| `VALKEY_URL` | queue-agents | Queue and pub/sub. Defaults to `redis://127.0.0.1:6379` |
 | `PORT` | web tiers | Defaults to `3000` |
 | `GITHUB_TOKEN` | all | Optional. Raises rate limits and enables private-repo diffs |
-| `GITHUB_WEBHOOK_SECRET` | workflow-agents | HMAC secret for webhook verification |
-| `WORKFLOW_API_KEY` | workflow-agents | Optional bearer token protecting `/api/reviews` and `/webhooks/*` |
 | `RENDER_USE_LOCAL_DEV` | workflow-agents | Set to `true` only for local dev |
-| `RENDER_LOCAL_DEV_URL` | workflow-agents | Local task server URL for Docker or `dev:workflows` |
+| `RENDER_LOCAL_DEV_URL` | workflow-agents | Local Workflow task server URL |
 | `RENDER_API_KEY` | workflow-agents | Required in production Workflow dispatch |
+| `RENDER_WORKFLOW_SLUG` | workflow-agents | Required in production. Slug of the Workflow service |
 
 ## Testing
 

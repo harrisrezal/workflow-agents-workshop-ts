@@ -9,7 +9,7 @@ projects:
           - name: naive-agent-db
             plan: basic-256mb
             region: oregon
-            postgresMajorVersion: "17"
+            postgresMajorVersion: "18"
 
         services:
           - type: web

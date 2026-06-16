@@ -12,8 +12,12 @@ prepareDiff → filterDiff → [ security ‖ performance ‖ ux? ] → judge
 
 ## Key exports
 
-- `runReview(prUrl, options)` — the whole pipeline; returns a verdict, findings,
-  and token usage. Emits progress via an `onEvent` callback (used by the worker).
+Each pattern imports these building blocks and composes its own review pipeline
+inline — see `naive-agent/src/server.ts`, `queue-agents/src/worker.ts`, and
+`workflow-agents/src/workflows/code-review/index.ts`.
+
+- **Pipeline building blocks**: `prepareDiff`, `filterDiff`, `selectReviewers`,
+  `toReviewSummary`, `parseDecision`, `sumUsage`.
 - `defineAgent(def)` → an `Agent` with an in-process `.run(input, ctx)`.
 - The agents: `securityReviewer`, `performanceReviewer`, `uxReviewer`, `judge`,
   plus `REVIEWERS`, `selectReviewers()`, and `hasFrontendFiles()`.
@@ -30,7 +34,7 @@ prepareDiff → filterDiff → [ security ‖ performance ‖ ux? ] → judge
 
 ```
 src/
-  review.ts        runReview + parseDecision (the orchestration)
+  review.ts        review types + re-exports (parseDecision, toReviewSummary)
   agents.ts        agent definitions + reviewer selection
   agent.ts         defineAgent() → in-process .run()
   loop.ts          the provider-agnostic LLM loop

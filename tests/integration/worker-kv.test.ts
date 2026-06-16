@@ -1,8 +1,8 @@
 /**
- * Verifies the `processEntry` exercise (packages/worker-agents/src/kv.ts).
+ * Verifies the `processEntry` ack contract (packages/queue-agents/src/kv.ts).
  *
- * Needs a real Valkey/Redis — set REDIS_URL to run, otherwise the whole suite is
- * skipped. This is the red→green check for the Session 1 / Pattern 2 exercise:
+ * Needs a real Valkey instance — set VALKEY_URL to run, otherwise the whole suite
+ * is skipped.
  *   - a handled message is ACKed (leaves the group's pending list)
  *   - a failed handler leaves the message un-acked (stays pending → retried)
  */
@@ -16,15 +16,15 @@ import {
   enqueueReview,
   processEntry,
   reclaimStale,
-} from '../../packages/worker-agents/src/kv.js'
+} from '../../packages/queue-agents/src/kv.js'
 
-const REDIS_URL = process.env.REDIS_URL
+const VALKEY_URL = process.env.VALKEY_URL
 
-describe('kv.processEntry ack semantics', { skip: !REDIS_URL }, () => {
+describe('kv.processEntry ack semantics', { skip: !VALKEY_URL }, () => {
   let client!: Redis
 
   before(async () => {
-    client = new Redis(REDIS_URL!, { maxRetriesPerRequest: null })
+    client = new Redis(VALKEY_URL!, { maxRetriesPerRequest: null })
     await client.del(STREAM) // isolate from previous runs
     await ensureGroup(client)
   })

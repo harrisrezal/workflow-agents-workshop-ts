@@ -6,8 +6,8 @@
   "description": "workflow-agents — the same shared agents, run as Render Workflow tasks (per-agent isolation, retries, traces).",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "dev": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx src/server.ts",
-    "dev:workflows": "render workflows dev -- npm run dev",
+    "dev": "RENDER_USE_LOCAL_DEV=true node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx src/server.ts",
+    "dev:workflows": "RENDER_USE_LOCAL_DEV=true RENDER_LOCAL_DEV_URL=http://127.0.0.1:8120 RENDER_API_KEY=local-dev render workflows dev -- npm run dev",
     "start": "node --import tsx src/server.ts",
     "start:workflow": "node --import tsx src/workflow.ts"
   },

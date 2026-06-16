@@ -11,7 +11,7 @@ const repoRoot = new URL('../..', import.meta.url).pathname
 const setupScript = join(repoRoot, 'scripts/setup-attendee.js')
 const blueprintPaths = [
   'packages/naive-agent/render.yaml',
-  'packages/worker-agents/render.yaml',
+  'packages/queue-agents/render.yaml',
   'packages/workflow-agents/render.yaml',
 ]
 const blueprintFixtures: Record<string, string> = {
@@ -30,25 +30,25 @@ const blueprintFixtures: Record<string, string> = {
                   name: naive-agent-db
                   property: connectionString
 `,
-  'packages/worker-agents/render.yaml': `projects:
-  - name: agents-workshop-worker
+  'packages/queue-agents/render.yaml': `projects:
+  - name: agents-workshop-queue
     environments:
       - name: production
         databases:
-          - name: worker-agents-db
+          - name: queue-agents-db
         services:
           - type: keyvalue
-            name: worker-agents-valkey
+            name: queue-agents-valkey
           - type: web
-            name: worker-agents-web
+            name: queue-agents-web
             envVars:
-              - key: REDIS_URL
+              - key: VALKEY_URL
                 fromService:
-                  name: worker-agents-valkey
+                  name: queue-agents-valkey
                   type: keyvalue
                   property: connectionString
           - type: worker
-            name: worker-agents-worker
+            name: queue-agents-worker
 `,
   'packages/workflow-agents/render.yaml': `projects:
   - name: agents-workshop-workflows
@@ -129,13 +129,13 @@ test('setup script namespaces all blueprint resources and references', async () 
   assert.match(naive, /fromDatabase:\n\s+name: octo-user-naive-agent-db/)
 
   const worker = await readFile(
-    join(root, 'packages/worker-agents/render.yaml'),
+    join(root, 'packages/queue-agents/render.yaml'),
     'utf8',
   )
-  assert.match(worker, /name: octo-user-worker-agents-valkey/)
-  assert.match(worker, /name: octo-user-worker-agents-web/)
-  assert.match(worker, /name: octo-user-worker-agents-worker/)
-  assert.match(worker, /fromService:\n\s+name: octo-user-worker-agents-valkey/)
+  assert.match(worker, /name: octo-user-queue-agents-valkey/)
+  assert.match(worker, /name: octo-user-queue-agents-web/)
+  assert.match(worker, /name: octo-user-queue-agents-worker/)
+  assert.match(worker, /fromService:\n\s+name: octo-user-queue-agents-valkey/)
 
   const workflow = await readFile(
     join(root, 'packages/workflow-agents/render.yaml'),

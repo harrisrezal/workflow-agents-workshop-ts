@@ -6,7 +6,7 @@ export interface ReviewRow {
   status: string
   verdict: string | null
   reason: string | null
-  /** Which package/pattern created the review (naive-agent, worker-agents, …). */
+  /** Which package/pattern created the review (naive-agent, queue-agents, …). */
   source: string | null
   /** The workflow/pipeline that ran it (code-review, your-review, …). */
   workflow: string | null

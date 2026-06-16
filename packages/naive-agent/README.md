@@ -7,10 +7,10 @@ baseline the rest of the workshop improves on.
 
 ```
 browser ──POST /api/reviews──▶ web service
-                                  └─ runReview() in-process:
-                                       prepareDiff → [security ‖ performance] → judge
+                                  └─ in-process, blocking the HTTP request:
+                                       prepareDiff → filterDiff → [security ‖ performance ‖ ux?] → judge
                                   └─ writes telemetry to Postgres
-                                  └─ responds when the whole review is done
+                                  └─ responds only when the entire review is done
 ```
 
 - **Render primitives:** Web Service + Postgres.

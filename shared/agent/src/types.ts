@@ -186,7 +186,7 @@ export interface RunContext {
 
 /**
  * A runnable agent: a definition plus a substrate-agnostic `run()` that executes
- * the loop in-process. naive-agent and worker-agents call `run()` directly;
+ * the loop in-process. naive-agent and queue-agents call `run()` directly;
  * workflow-agents wraps it in a Render `task()`. Build one with `defineAgent()`.
  */
 export interface Agent extends AgentDefinition {

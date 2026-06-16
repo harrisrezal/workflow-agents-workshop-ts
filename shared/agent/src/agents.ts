@@ -4,7 +4,7 @@
  * substrate decides how to invoke them:
  *
  *   naive-agent     → agent.run(input)
- *   worker-agents   → agent.run(input) inside a queue consumer
+ *   queue-agents    → agent.run(input) inside a queue consumer
  *   workflow-agents → task(agent.name, ({ input }) => agent.run(input))
  */
 import { defineAgent } from './agent.js'

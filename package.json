@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "One agentic code-review use case, three Render execution substrates: in-process, worker+queue, and Workflows.",
+  "description": "One agentic code-review use case, three Render execution substrates: in-process, queue+worker, and Workflows.",
   "license": "MIT",
   "engines": {
     "node": ">=22.12.0"
@@ -11,7 +11,7 @@
   "workspaces": [
     "shared/*",
     "packages/naive-agent",
-    "packages/worker-agents",
+    "packages/queue-agents",
     "packages/workflow-agents"
   ],
   "scripts": {
@@ -23,8 +23,8 @@
     "test:e2e": "AGENT_MODEL=mock RENDER_USE_LOCAL_DEV=true node --import tsx --test \"tests/e2e/**/*.test.ts\"",
     "test:worker": "AGENT_MODEL=mock node --import tsx --test \"tests/integration/worker-kv.test.ts\"",
     "naive:dev": "npm run dev --workspace @workshop/naive-agent",
-    "worker:web": "npm run web --workspace @workshop/worker-agents",
-    "worker:worker": "npm run worker --workspace @workshop/worker-agents",
+    "queue:web": "npm run web --workspace @workshop/queue-agents",
+    "queue:worker": "npm run worker --workspace @workshop/queue-agents",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"

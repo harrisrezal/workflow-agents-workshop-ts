@@ -1,7 +1,7 @@
 # workflow-agents
 
 The same code-review agent run on [Render Workflows](https://render.com/docs/workflows).
-The agent code is unchanged from `naive-agent` and `worker-agents` (it comes from
+The agent code is unchanged from `naive-agent` and `queue-agents` (it comes from
 [`@workshop/agent`](../../shared/agent)); the only difference is that each agent
 runs as its own Render `task()` — with isolation, retries, timeouts, and traces
 handled by the platform.
@@ -28,12 +28,12 @@ code-review (Render task)
 
 ## Architecture
 
-Two processes, defined in [`render.yaml`](render.yaml):
+Two Render services participate:
 
 | Process | Source | Role |
 |---|---|---|
-| **Gateway** (web service) | `src/server.ts` | Receives PR submissions / GitHub webhooks, dispatches workflow runs, serves the telemetry viewer. |
-| **Workflow service** | `src/workflow.ts` | Registers and runs the task graph; each workflow and agent runs in its own container. |
+| **Gateway** (web service) | `src/server.ts` | Receives PR submissions, dispatches workflow runs, serves the telemetry viewer. |
+| **Workflow service** | `src/workflow.ts` | Registers and runs the task graph. Each workflow and agent runs in its own container. |
 
 Workflows are auto-discovered from `src/workflows/` — each subfolder with an
 `index.ts` that exports a `task()` is registered, and the folder name becomes the
@@ -71,7 +71,8 @@ Open `http://localhost:3000/` for the reviews table.
 Deploy the Blueprint ([`render.yaml`](render.yaml)) — a Web Service + managed
 Postgres — then create the Workflow service in the Render Dashboard (see
 [docs/03](../../docs/03-workflow-agents.md)). In production,
-`RENDER_USE_LOCAL_DEV=false` makes the gateway dispatch real Workflow tasks.
+`RENDER_WORKFLOW_SLUG` tells the gateway which Workflow service to dispatch to.
+Remote task IDs use `<workflow-service-slug>/code-review`.
 
 ## Reference
 
@@ -81,7 +82,6 @@ Postgres — then create the Workflow service in the Render Dashboard (see
 src/
   server.ts          gateway entry (Hono web host)
   workflow.ts        workflow service entry (task registration only)
-  github.ts          GitHub webhook verify + match
   workflows/
     loader.ts        workflow auto-discovery
     code-review/     the multi-agent review workflow
@@ -94,7 +94,6 @@ src/
 |---|---|
 | `POST /api/reviews` | Submit a code review by `{ prUrl }` |
 | `GET /` · `/api/reviews` · `/api/reviews/:id` | Telemetry viewer + read APIs |
-| `POST /webhooks/github` | GitHub PR webhook → code review |
 | `GET /healthz` | Liveness check |
 
 **Environment**
@@ -104,10 +103,9 @@ src/
 | `RENDER_USE_LOCAL_DEV` | `true` runs tasks in-process (local dev) |
 | `DATABASE_URL` | Postgres for durable runs; falls back to in-memory |
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | Optional; mock model if absent |
-| `WORKFLOW_API_KEY` | Bearer token protecting `POST /api/reviews` (open when unset) |
-| `GITHUB_WEBHOOK_SECRET` | HMAC secret for webhook verification |
 | `GITHUB_TOKEN` | Raises GitHub rate limits / enables private-repo diffs |
 | `RENDER_API_KEY` | Required in production for Workflow dispatch |
+| `RENDER_WORKFLOW_SLUG` | Required in production. Slug of the Workflow service |
 
 **Scripts**
 

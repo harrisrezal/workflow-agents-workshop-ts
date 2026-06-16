@@ -13,8 +13,6 @@ import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const WORKFLOW_SLUG = process.env.RENDER_WORKFLOW_SLUG ?? "workflow-agents";
-
 export interface DiscoveredWorkflows {
   /** Maps route name → Render task slug (for production dispatch). */
   mapping: Record<string, string>;
@@ -26,6 +24,7 @@ export async function loadWorkflows(dir: string): Promise<DiscoveredWorkflows> {
   const entries = await readdir(dir, { withFileTypes: true });
   const mapping: Record<string, string> = {};
   const localTasks: Record<string, (input: unknown) => unknown | Promise<unknown>> = {};
+  const workflowSlug = process.env.RENDER_WORKFLOW_SLUG?.trim();
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
@@ -37,7 +36,7 @@ export async function loadWorkflows(dir: string): Promise<DiscoveredWorkflows> {
     const taskFn = findTaskExport(mod);
     if (!taskFn) continue;
 
-    mapping[name] = `${WORKFLOW_SLUG}/${name}`;
+    mapping[name] = workflowSlug ? `${workflowSlug}/${name}` : name;
     localTasks[name] = taskFn;
   }
 

@@ -1,12 +1,12 @@
 /**
  * Pattern 3 - gateway (web service).
  *
- * A Hono server that turns inbound PR submissions / GitHub webhooks into Render
- * Workflow runs, and serves the shared telemetry viewer.
+ * A Hono server that turns inbound PR submissions into Render Workflow runs,
+ * and serves the shared telemetry viewer.
  *
  * In local dev there are two modes:
  *   - `RENDER_USE_LOCAL_DEV=true` (no URL) → in-process function calls (fast; host `npm run dev`)
- *   - `RENDER_LOCAL_DEV_URL` set → SDK dispatches to the Render CLI dev server (Docker / `dev:workflows`)
+ *   - `RENDER_LOCAL_DEV_URL` set → SDK dispatches to the local Render CLI dev server (`dev:workflows`)
  * In production the Render SDK dispatches real Workflow task runs on separate instances.
  * @workshop/db so the viewer shows the same reviews table as Patterns 1 & 2.
  */
@@ -17,7 +17,6 @@ import { Hono } from "hono";
 import { createReview, migrate, persistReview, setReviewResult } from "@workshop/db";
 import { createUiRouter } from "@workshop/ui";
 import { loadWorkflows } from "./workflows/loader.js";
-import { matchPullRequest, verifyGithubSignature } from "./github.js";
 
 /** What the code-review workflow returns (see workflows/code-review). */
 interface CodeReviewResult {
@@ -27,11 +26,55 @@ interface CodeReviewResult {
   usage?: { inputTokens: number; outputTokens: number };
 }
 
+interface WorkflowTaskRunDetails {
+  status?: string;
+  error?: unknown;
+  results?: unknown;
+}
+
+interface WorkflowTaskRunClient {
+  workflows: {
+    getTaskRun(taskRunId: string): Promise<WorkflowTaskRunDetails>;
+  };
+}
+
+interface WorkflowTaskRunWaitOptions {
+  intervalMs?: number;
+}
+
+const TERMINAL_WORKFLOW_STATUSES = new Set(["completed", "succeeded", "failed", "canceled"]);
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function waitForWorkflowTaskRun(
+  render: WorkflowTaskRunClient,
+  taskRunId: string,
+  options: WorkflowTaskRunWaitOptions = {},
+): Promise<WorkflowTaskRunDetails> {
+  const intervalMs = options.intervalMs ?? 1000;
+
+  while (true) {
+    const taskRun = await render.workflows.getTaskRun(taskRunId);
+    if (taskRun.status && TERMINAL_WORKFLOW_STATUSES.has(taskRun.status)) {
+      return taskRun;
+    }
+    await sleep(intervalMs);
+  }
+}
+
 /** Build the gateway app. Exported so tests can drive it via `app.fetch`. */
 export async function createApp(): Promise<Hono> {
   const isLocalDev = process.env.RENDER_USE_LOCAL_DEV === "true";
   const localDevUrl = process.env.RENDER_LOCAL_DEV_URL?.trim();
   const useInProcess = isLocalDev && !localDevUrl;
+  const isProduction = process.env.NODE_ENV === "production";
+  if (isProduction && !localDevUrl && !process.env.RENDER_WORKFLOW_SLUG?.trim()) {
+    throw new Error(
+      "RENDER_WORKFLOW_SLUG is required for production Workflow dispatch. Set it to the slug of the Render Workflow service, for example <workflow-service-slug>.",
+    );
+  }
   const { mapping, localTasks } = await loadWorkflows(
     new URL("./workflows", import.meta.url).pathname,
   );
@@ -57,7 +100,7 @@ export async function createApp(): Promise<Hono> {
       ...(localDevUrl ? { localDevUrl } : {}),
     });
     const started = await render.workflows.startTask(slug, [input]);
-    const finished = await started.get();
+    const finished = await waitForWorkflowTaskRun(render, started.taskRunId);
     const ok = finished.status === "succeeded" || finished.status === "completed";
     if (!ok) throw new Error(finished.error ? String(finished.error) : "workflow failed");
     // The SDK returns the task's return value wrapped in a results array (one
@@ -125,22 +168,6 @@ export async function createApp(): Promise<Hono> {
 
   const app = new Hono();
 
-  // Auth is per-route, because the two write paths authenticate differently:
-  //   - /api/reviews  → bearer token (WORKFLOW_API_KEY), for first-party callers.
-  //   - /webhooks/github → HMAC signature (GITHUB_WEBHOOK_SECRET), checked inside
-  //     the handler. GitHub signs the body; it never sends a bearer token, so the
-  //     API key must NOT gate the webhook or real deliveries would 401.
-  // Reads (the viewer and its APIs) are always open.
-  const apiKey = process.env.WORKFLOW_API_KEY;
-  if (apiKey) {
-    const expected = `Bearer ${apiKey}`;
-    app.use("/api/reviews", async (c, next) => {
-      if (c.req.method !== "POST") return next();
-      if (c.req.header("authorization") === expected) return next();
-      return c.json({ error: "unauthorized" }, 401);
-    });
-  }
-
   app.get("/healthz", (c) => c.json({ ok: true }));
 
   // The workflows available to dispatch. The viewer uses this to offer a picker
@@ -159,23 +186,6 @@ export async function createApp(): Promise<Hono> {
     }
     const reviewId = await runReviewWorkflow(body.prUrl, [], workflowName);
     return c.json({ id: reviewId }, 202);
-  });
-
-  app.post("/webhooks/github", async (c) => {
-    const rawBody = await c.req.text();
-    if (!verifyGithubSignature(rawBody, c.req.header())) {
-      return c.json({ error: "signature verification failed" }, 401);
-    }
-    let event: unknown;
-    try {
-      event = rawBody ? JSON.parse(rawBody) : {};
-    } catch {
-      return c.json({ error: "invalid JSON body" }, 400);
-    }
-    const matched = matchPullRequest(event, c.req.header());
-    if (!matched) return c.json({ ignored: true }, 202);
-    const reviewId = await runReviewWorkflow(matched.url, matched.labels);
-    return c.json({ runId: reviewId, status: "running" }, 202);
   });
 
   // The same telemetry viewer as Patterns 1 & 2 (reviews + findings + spans).

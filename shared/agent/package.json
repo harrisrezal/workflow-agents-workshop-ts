@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "The constant: LLM loop, model client, plain-TS agent definitions, prepareDiff, and runReview. Substrate-agnostic.",
+  "description": "The constant: LLM loop, model client, plain-TS agent definitions, prepareDiff, and composable review building blocks. Substrate-agnostic.",
   "exports": {
     ".": "./src/index.ts"
   },

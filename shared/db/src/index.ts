@@ -3,7 +3,7 @@
  * UI reads, and the span sink the agent loop writes through.
  *
  * Backend selection is automatic:
- *   - DATABASE_URL set  → Postgres (durable; required for multi-process worker-agents)
+ *   - DATABASE_URL set  → Postgres (durable; required for multi-process queue-agents)
  *   - DATABASE_URL unset → in-memory (keyless, zero-setup local dev)
  *
  * The public functions below have the same shape regardless of backend. The pg
@@ -187,7 +187,7 @@ export interface FlushableTracer extends Tracer {
 
 /**
  * A Tracer that writes spans to the active backend. Best-effort: failures are
- * logged and swallowed so telemetry never breaks a run. Pass to runReview.
+ * logged and swallowed so telemetry never breaks a run. Pass to agent.run().
  */
 export function storeTracer(pool?: PgPool): FlushableTracer {
   if (!usePg(pool)) {

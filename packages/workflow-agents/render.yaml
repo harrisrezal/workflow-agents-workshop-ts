@@ -14,7 +14,7 @@ projects:
           - name: workflow-agents-db
             plan: basic-256mb
             region: oregon
-            postgresMajorVersion: "17"
+            postgresMajorVersion: "18"
 
         services:
           - type: web
@@ -36,12 +36,8 @@ projects:
               - key: RENDER_API_KEY
                 sync: false
 
-              # API auth for workflow + webhook POST endpoints
-              - key: WORKFLOW_API_KEY
-                sync: false
-
-              # GitHub webhook HMAC verification + token for diffs
-              - key: GITHUB_WEBHOOK_SECRET
+              # Slug of the separate Render Workflow service, for example workflow-agents
+              - key: RENDER_WORKFLOW_SLUG
                 sync: false
 
               - key: NODE_ENV

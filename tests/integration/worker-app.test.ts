@@ -2,7 +2,7 @@ delete process.env.DATABASE_URL
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createApp } from '../../packages/worker-agents/src/web.js'
+import { createApp } from '../../packages/queue-agents/src/web.js'
 
 const app = createApp()
 
@@ -23,9 +23,9 @@ test('worker web validates the review body', async () => {
   assert.equal(res.status, 400)
 })
 
-// Enqueueing needs a real Valkey/Redis (the worker is a separate process), so this
-// only runs when REDIS_URL is set; otherwise it's skipped to keep the suite offline.
-test('POST /api/reviews enqueues a job', { skip: !process.env.REDIS_URL }, async () => {
+// Enqueueing needs a real Valkey instance (the worker is a separate process), so
+// this only runs when VALKEY_URL is set; otherwise it's skipped to keep the suite offline.
+test('POST /api/reviews enqueues a job', { skip: !process.env.VALKEY_URL }, async () => {
   const res = await app.fetch(
     new Request('http://test/api/reviews', {
       method: 'POST',

@@ -12,6 +12,7 @@ test('loadWorkflows auto-discovers the workflow folders', async () => {
   assert.deepEqual(Object.keys(mapping).sort(), ['code-review', 'your-review'])
   assert.equal(typeof localTasks['code-review'], 'function')
   assert.equal(typeof localTasks['your-review'], 'function')
-  // Slugs are derived as "{service}/{folder}".
-  assert.match(mapping['code-review'] ?? '', /\/code-review$/)
+  // Without RENDER_WORKFLOW_SLUG the mapping value is the bare folder name;
+  // with it, slugs are "{service}/{folder}" (covered by the integration test).
+  assert.equal(mapping['code-review'], 'code-review')
 })

@@ -4,11 +4,11 @@
  * Agents are plain data wrapped by `defineAgent` into objects with an in-process
  * `.run()`. Tools (and optional MCP servers) live in `tools/` and are
  * auto-discovered. The substrate decides how `.run()` is invoked — naive-agent
- * (in-process), worker-agents (queue worker), or workflow-agents (Render task) —
+ * (in-process), queue-agents (queue worker), or workflow-agents (Render task) —
  * and the agent code never changes between them.
  */
 
-export { runReview, parseDecision, sumUsage, toReviewSummary } from './review.js'
+export { parseDecision, sumUsage, toReviewSummary } from './review.js'
 export type {
   ReviewEvent,
   ReviewResult,

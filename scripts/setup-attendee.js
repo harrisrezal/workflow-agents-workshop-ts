@@ -5,18 +5,18 @@ import { isMap, isScalar, isSeq, parseDocument } from 'yaml'
 
 const DEFAULT_BLUEPRINTS = [
   'packages/naive-agent/render.yaml',
-  'packages/worker-agents/render.yaml',
+  'packages/queue-agents/render.yaml',
   'packages/workflow-agents/render.yaml',
 ]
 const BASE_RESOURCE_NAMES = [
   'agents-workshop-naive',
   'naive-agent-db',
   'naive-agent',
-  'agents-workshop-worker',
-  'worker-agents-db',
-  'worker-agents-valkey',
-  'worker-agents-web',
-  'worker-agents-worker',
+  'agents-workshop-queue',
+  'queue-agents-db',
+  'queue-agents-valkey',
+  'queue-agents-web',
+  'queue-agents-worker',
   'agents-workshop-workflows',
   'workflow-agents-db',
   'workflow-agents',

@@ -1,4 +1,4 @@
--- Telemetry store shared by naive-agent and worker-agents. Idempotent.
+-- Telemetry store shared by naive-agent and queue-agents. Idempotent.
 
 CREATE TABLE IF NOT EXISTS reviews (
   id            UUID        PRIMARY KEY,

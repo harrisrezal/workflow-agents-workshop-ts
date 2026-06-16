@@ -3,7 +3,7 @@
  * unset, so local dev runs keyless and database-less. On deploy, Render provisions
  * Postgres and index.ts switches to the pg backend automatically.
  *
- * Caveat: this state is per-process. worker-agents runs its web and worker as
+ * Caveat: this state is per-process. queue-agents runs its web and worker as
  * separate processes, so it needs real Postgres to share state between them.
  */
 import type { SpanInfo, SpanOutcome, Tracer } from '@workshop/agent'

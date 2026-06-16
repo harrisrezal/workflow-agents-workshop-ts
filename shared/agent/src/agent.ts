@@ -8,7 +8,7 @@
  *   4. close any MCP connections
  *
  * This is the one execution path every substrate shares. naive-agent and
- * worker-agents call `agent.run()` directly; workflow-agents wraps it:
+ * queue-agents call `agent.run()` directly; workflow-agents wraps it:
  * `task(agent.name, ({input}) => agent.run(input, ctx))`. No Render coupling
  * lives here.
  */
